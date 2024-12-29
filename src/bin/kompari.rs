@@ -3,7 +3,7 @@
 
 use clap::Parser;
 use kompari::{CompareConfig, ImageDiff, ReportConfig};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -54,8 +54,16 @@ struct ReportArgs {
 }
 
 #[derive(Parser, Debug)]
+struct ReviewArgs {
+    /// Embed images into the report
+    #[arg(long, default_value_t = false)]
+    embed_images: bool,
+}
+
+#[derive(Parser, Debug)]
 enum Command {
     Report(ReportArgs),
+    Review(ReviewArgs),
 }
 
 fn process_command(args: Args) -> kompari::Result<()> {
@@ -75,6 +83,14 @@ fn process_command(args: Args) -> kompari::Result<()> {
             config.set_right_title(&args.right_title);
             config.set_embed_images(opts.embed_images);
             image_diff.create_report(&config, &opts.output, true)?;
+        }
+        Command::Review(opts) => {
+            let mut config = ReportConfig::default();
+            config.set_left_title(&args.left_title);
+            config.set_right_title(&args.right_title);
+            config.set_embed_images(opts.embed_images);
+            config.set_review(true);
+            image_diff.create_report(&config, Path::new("review.html"), true)?;
         }
     }
     Ok(())

@@ -20,6 +20,7 @@ targets = []
 [features]
 cli = ["dep:clap"]
 xtask-cli = ["dep:clap"]
+review = ["dep:hyper"]
 
 [[bin]]
 name = "kompari"
@@ -32,6 +33,7 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 maud = "0.26"
 thiserror = "2"
 clap = { version = "4.5", features = ["derive"], optional = true }
+hyper = {  version = "1.5", optional = true, features = ["http1", "server"] }
 
 [profile.ci]
 inherits = "dev"

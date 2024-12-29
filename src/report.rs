@@ -119,14 +119,17 @@ fn render_difference_info(config: &ReportConfig, pair_diff: &PairResult) -> Mark
     }
 }
 
-fn render_pair_diff(config: &ReportConfig, pair_diff: &PairResult) -> crate::Result<Markup> {
+fn render_pair_diff(config: &ReportConfig, id: usize, pair_diff: &PairResult) -> crate::Result<Markup> {
     Ok(html! {
         div class="diff-entry" {
             h2 {
                 @if config.is_review {
                     label class="toggle-switch" {
-                        input type="checkbox" onchange="toggle(event)";
+                        input type="checkbox" id=(format!("t{id}"));
                         span class="slider";
+                    }
+                    script {
+                        (format!("document.getElementById('t{id}').addEventListener('change', toggle);"))
                     }
                 }
                 (pair_diff.pair.title)};
@@ -389,6 +392,18 @@ input:checked + .slider:before {
   cursor: not-allowed;
   transform: none;
 }
+#errorMsg {
+    background-color: #fef2f2;
+    border: 1px solid #f87171;
+    border-radius: 6px;
+    padding: 16px;
+    margin: 12px 0;
+    display: none;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 600px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
 
 ";
 
@@ -431,9 +446,30 @@ function toggle(event) {
 
 function updateAcceptButton() {
     let text = document.getElementById('acceptText');
-    text.textContent = \"Accept Selected Tests (\" + selected.size + \" / \" + nTests + \")\";
+    text.textContent = \"Accept selected cases (\" + selected.size + \" / \" + nTests + \")\";
     let button = document.getElementById('acceptButton');
     button.disabled = (selected.size === 0);
+}
+
+async function acceptTests() {
+    let text = document.getElementById('acceptText');
+    text.textContent = \"Updating \" + selected.size + \" cases ...\";
+    let button = document.getElementById('acceptButton');
+    button.disabled = true;
+
+    try {
+        const url = '/update';
+        const response = await fetch(url, {method: 'POST'});
+        if (!response.ok) {
+          throw new Error(`Response status: ${response.status}`);
+        }
+    } catch (e) {
+        let error = document.getElementById('errorMsg');
+        error.textContent = e.message;
+        error.style.display = \"flex\";
+        text.textContent = \"Try update again\";
+        button.disabled = false;
+    }
 }
 ";
 
@@ -464,13 +500,14 @@ pub(crate) fn render_html_report(
                 }
                 @if config.is_review {
                     script { (format!("const nTests = {};", diffs.len())) }
-                    button class="accept-button" id="acceptButton" disabled {
-                        span class="button-text" id="acceptText" { (format!("Accept Selected Tests (0 / {})", diffs.len())) }
+                    button class="accept-button" id="acceptButton" disabled onClick="acceptTests()" {
+                        span class="button-text" id="acceptText" { (format!("Accept selected cases (0 / {})", diffs.len())) }
                     }
+                    span id="errorMsg" {};
                 }
                 script { (PreEscaped(JS_CODE)) }
-                @for pair_diff in diffs {
-                   (render_pair_diff(config, pair_diff)?)
+                @for (id, pair_diff) in diffs.iter().enumerate() {
+                   (render_pair_diff(config, id, pair_diff)?)
                 }
             }
         }

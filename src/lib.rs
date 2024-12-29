@@ -87,6 +87,10 @@ impl<'a> ReportConfig<'a> {
     pub fn set_embed_images(&mut self, embed_images: bool) {
         self.embed_images = embed_images;
     }
+
+    pub fn set_review(&mut self, is_review: bool) {
+        self.is_review = is_review;
+    }
 }
 
 #[derive(Default)]
